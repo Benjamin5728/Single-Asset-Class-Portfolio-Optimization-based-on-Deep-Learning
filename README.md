@@ -17,6 +17,15 @@ The goal is to construct a "Holy Grail" portfolio—inspired by **Ray Dalio's Al
 
 ---
 
+## 📂 Project Structure
+
+```text
+├── main.py              # Main execution script (Contains Transformer model, Clustering, and Backtesting logic)
+├── requirements.txt     # Python dependencies
+├── results.png          # Performance visualization
+├── LICENSE              # MIT License
+└── README.md            # Project documentation
+
 ## 🚀 Key Features
 
 * **Transformer Autoencoder Architecture**: Implements a self-attention mechanism to capture long-range temporal dependencies and filter out high-frequency market noise (Denoising).
