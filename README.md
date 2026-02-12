@@ -50,7 +50,6 @@ The strategy follows a strictly isolated pipeline to ensure data integrity:
 > **Note:** The strategy demonstrated a significant **Alpha** against the S&P 500 (SPY) benchmark during the validation period, particularly outperforming during the Q1 2025 drawdown via dynamic allocation to defensive assets (BIL, SHV).
 
 ![Performance Chart](results.png)
-*(Please replace this placeholder with your actual 'results.png' file)*
 
 | Metric | Strategy | Benchmark (SPY) |
 | :--- | :--- | :--- |
