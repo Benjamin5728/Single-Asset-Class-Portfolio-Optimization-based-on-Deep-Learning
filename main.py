@@ -14,9 +14,6 @@ from tqdm import tqdm
 import datetime
 
 
-'''===================================================================================================================================='''
-
-
 class Config:
 
     
@@ -86,9 +83,6 @@ elif torch.backends.mps.is_available():
 else:
     device = torch.device("cpu")
     print("Running on device: CPU")
-
-
-'''===================================================================================================================================='''
 
 
 def calculate_technical_indicators(df):
@@ -186,9 +180,6 @@ def get_feature_data(tickers, start, end):
     return features_dict, valid_tickers
 
 
-'''===================================================================================================================================='''
-
-
 class MultiFactorDataset(Dataset):
     def __init__(self, features_dict, seq_len):
         self.sequences = []
@@ -225,9 +216,6 @@ class AssetEmbeddingModel(nn.Module):
         embedding = torch.mean(memory, dim=1) 
         recon = self.decoder_net(memory)
         return recon, embedding
-
-
-'''===================================================================================================================================='''
 
 
 def train_engine(model, dataloader, epochs):
@@ -324,9 +312,6 @@ def smart_portfolio_selection(embeddings_df, start_date, end_date):
         final_picks.append({'Ticker': best_ticker, 'Cluster_ID': i, 'Sharpe': round(stats['Sharpe'], 2), 'Vol': round(stats['Vol'], 2)})
 
     return pd.DataFrame(final_picks), embeddings_df, results
-
-
-'''===================================================================================================================================='''
 
 
 if __name__ == "__main__":
