@@ -1,4 +1,4 @@
-# Unsupervised Regime-Based Asset Allocation using Transformer Autoencoders 📈
+# Multi-Asset Porfolio Optimization based on Deep Learning 📈
 
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
 ![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-red)
@@ -8,7 +8,7 @@
 
 ## 📖 Executive Summary
 
-**This is a sophisticated quantitative investment framework designed to identify latent market regimes and construct robust, uncorrelated portfolios.
+This is a sophisticated quantitative investment framework designed to identify latent market regimes and construct robust, uncorrelated portfolios.
 
 Unlike traditional strategies that rely on linear correlations or simple price prediction, this project leverages **Self-Supervised Deep Learning**. It employs a **Transformer-based Autoencoder** to compress high-dimensional, noisy market data into dense, informative latent embeddings. These embeddings are then analyzed using **Unsupervised Hierarchical Clustering** to identify distinct asset clusters, effectively implementing a modern, AI-driven version of Ray Dalio's "Holy Grail" diversification philosophy.
 
