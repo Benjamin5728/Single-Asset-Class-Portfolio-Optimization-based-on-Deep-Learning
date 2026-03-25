@@ -44,17 +44,16 @@ Moving away from conservative Risk Parity, the allocation logic is inspired by t
 
 ## 📁 Project Structure
 
-```text
-quant_trading_project/
-│
-├── config.py           # Global configurations, universe selection, and hyperparameters
-├── data.py             # Data downloading and local caching logic
-├── features.py         # Technical indicator computation and feature scaling
-├── model.py            # PyTorch Transformer architecture and training loop
-├── portfolio.py        # Asset clustering and Softmax weight allocation
-├── backtest.py         # Rolling backtest engine, cost deduction, and visualization
-├── main.py             # Main execution entry point
-└── README.md           # Project documentation
+* **quant_trading_project/
+
+* **config.py           # Global configurations, universe selection, and hyperparameters
+* **data.py             # Data downloading and local caching logic
+* **features.py         # Technical indicator computation and feature scaling
+* **model.py            # PyTorch Transformer architecture and training loop
+* **portfolio.py        # Asset clustering and Softmax weight allocation
+* **backtest.py         # Rolling backtest engine, cost deduction, and visualization
+* **main.py             # Main execution entry point
+* **README.md           # Project documentation
 
 ## ⚙️ Technical Architecture
 
