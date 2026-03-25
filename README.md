@@ -1,9 +1,9 @@
 # Single-Asset-Class Portfolio Optimization based on Deep Learning
 
 ## 📈 Project Overview
-This project implements a sophisticated **quantitative equity strategy** focused on the S&P 500 universe. It leverages **Deep Learning (Transformer Autoencoders)** and **Unsupervised Clustering** to identify structural market regimes and capture Alpha through dynamic sector rotation.
+This project implements a sophisticated **quantitative equity strategy** focused on the S&P 500 universe. It leverages **Deep Learning (Transformer Autoencoders)** and **Unsupervised Clustering** to identify structural market regimes and capture Alpha through dynamic sector rotation. 
 
-Unlike traditional multi-asset portfolios that often dilute returns by over-allocating to "safe havens" (Bonds/Cash), this strategy is designed for **pure equity exposure**, utilizing a **Rolling Walk-Forward** framework to aggressively target high risk-adjusted return opportunities in the stock market.
+Unlike traditional multi-asset portfolios that often dilute returns by over-allocating to "safe havens" (Bonds/Cash), this strategy is designed for **pure equity exposure**, utilizing a **Rolling Walk-Forward** framework to aggressively target high risk-adjusted return opportunities in the stock market, strictly accounting for real-world transaction costs.
 
 ## 💡 Inspiration & Design Philosophy: The Quest for the "Holy Grail"
 
@@ -15,11 +15,11 @@ My initial goal was to build a true **Multi-Asset** deep learning model that dyn
 However, during the development of the multi-asset prototype, I encountered a persistent **Deep Learning "Safe Haven" Bias**:
 * **The Observation:** When presented with a mixed universe (High-Vol Stocks vs. Low-Vol Treasuries) and optimized for Sharpe Ratio, the Transformer model consistently learned to "game" the objective function.
 * **The Problem:** The model discovered that the easiest way to maximize risk-adjusted returns was not to predict stock alpha, but to **allocate 90%+ capital to cash equivalents (e.g., BIL/SHV)**. This resulted in a theoretically high-Sharpe but practically useless "dead fish" equity curve that missed all growth opportunities.
-* **The Pivot:** Acknowledging this limitation in current single-model architectures, I pivoted to a **Pure Equity Strategy**. By restricting the universe to **350+ liquid S&P 500 stocks**, I force the AI to hunt for diversification and Alpha *within* the equity risk premium, effectively searching for uncorrelated drivers (Cluster Regimes) inside the stock market itself.
+* **The Pivot:** Acknowledging this limitation in current single-model architectures, I pivoted to a **Pure Equity Strategy**. By restricting the universe to **300+ liquid S&P 500 stocks**, I force the AI to hunt for diversification and Alpha *within* the equity risk premium, effectively searching for uncorrelated drivers (Cluster Regimes) inside the stock market itself.
 
 ### 2. Deep Learning as a "Feature Extractor"
 Inspired by **NLP (Natural Language Processing)**, this project treats daily price action not as random walks, but as "sequences" with latent grammar.
-* Instead of feeding raw prices to a predictor, we use a **Transformer Autoencoder** to compress 30-day noisy market data into dense **Latent Embeddings**.
+* Instead of feeding raw prices to a predictor, we use a **2-Layer Transformer Autoencoder** to compress 30-day noisy market data into dense **64-dimensional Latent Embeddings**.
 * This allows the model to "see" market regimes (e.g., "Tech Momentum", "Defensive Rotation") that are invisible to linear correlation matrices.
 
 ### 3. "Winner-Takes-Most" Allocation
@@ -29,27 +29,28 @@ Moving away from conservative Risk Parity, the allocation logic is inspired by t
 
 ## 🚀 Key Features
 
-* **Universe:** 350+ S&P 500 Constituents (Filtered for liquidity and data integrity).
+* **Universe:** 300+ S&P 500 Constituents (Filtered for liquidity and data integrity).
 * **9-Factor Feature Engineering:** A robust multi-dimensional view of every asset, including:
     * *Momentum:* 10-Day ROC.
     * *Trend:* MACD, Distance-to-MA50.
     * *Volatility:* ATR (Average True Range), Rolling Volatility.
     * *Mean Reversion:* Bollinger Bands %B.
     * *Market Beta:* Rolling correlation with SPY.
+* **Realistic Market Friction:** Hard-coded **0.1% transaction cost per trade** to simulate realistic slippage and broker commissions, penalizing excessive turnover.
 * **Rolling Walk-Forward Backtest:**
     * **Training:** 4-Year Moving Window (1008 trading days) to capture long-term structural dependencies.
-    * **Validation:** 2-Year Out-of-Sample (2024-2026), simulating a real-world quarterly rebalancing fund.
+    * **Validation:** Out-of-Sample testing with a 63-day rebalancing frequency, simulating a real-world quarterly rebalancing fund.
 * **Regime-Based Clustering:** Uses **Agglomerative Clustering** on latent embeddings to ensure the portfolio selects stocks that are *behaviorally distinct*, avoiding the trap of buying 30 correlated tech stocks.
 
 ## ⚙️ Technical Architecture
 
 ### 1. Data Pipeline
 * **Source:** Yahoo Finance (`yfinance`).
-* **Preprocessing:** Automatic handling of delisted tickers (e.g., removal of MRO, DFS) and `RobustScaler` normalization to handle fat-tail distribution in stock returns.
+* **Preprocessing:** Automatic handling of delisted tickers and `RobustScaler` normalization to handle fat-tail distribution in stock returns.
 
 ### 2. The Model (Transformer AE)
 * **Encoder:** 2-Layer Transformer with Multi-Head Attention ($d_{model}=64$, $n_{head}=4$).
-* **Task:** Reconstruction of the 9-factor technical state.
+* **Task:** Reconstruction of the 9-factor technical state sequence.
 * **Output:** A static vector embedding representing the asset's current "market state."
 
 ### 3. Portfolio Construction
@@ -59,31 +60,27 @@ The "Brain" of the strategy follows a strict logic:
 3.  **Select:** Pick the #1 Stock from each cluster (Best-in-Class).
 4.  **Weight:** Apply **Softmax Optimization** to allocate capital based on risk-adjusted momentum.
 
-## 📊 Performance Characteristics
-
-* **Alpha Generation:** Demonstrated significant excess returns over SPY in 2024-2025 backtests.
-* **Dynamic Rotation:** Successfully captured sector rotations, shifting exposure from Tech (2023) to Healthcare/Industrials (2024) as market regimes shifted.
-* **Drawdown Profile:** Higher volatility than a bond portfolio, but with significantly faster recovery times compared to the broad index.
-
 ## 📊 Backtest Results (Visual Proof)
 
-The following chart illustrates the strategy's cumulative performance during the **Out-of-Sample validation period (2024–Present)**.
+The following chart illustrates the strategy's cumulative performance during the **Out-of-Sample validation period (Jan 2024 – Mar 2026)**.
 
 ![Rolling Backtest Results](results.png)
-
-> *Figure 1: The Blue Line represents the AI-Driven Pure Stock Strategy, while the Grey Dashed Line represents the S&P 500 Benchmark (SPY).*
+> *Figure 1: The Blue Line represents the AI-Driven Pure Stock Strategy (Net of Fees), while the Grey Dashed Line represents the S&P 500 Benchmark (SPY).*
 
 ### Key Observations:
-1.  **Significant Alpha:** The strategy achieved a final capital of **~$16,458** (+64.6%) compared to the benchmark's ~$15,000, confirming the model's ability to generate excess returns without leverage.
-2.  **No "Cash Drag":** Unlike previous iterations that flat-lined by holding T-Bills, this curve shows active participation in market rallies (e.g., Q1 2024 and Late 2025).
-3.  **Resilient Recovery:** During market pullbacks (e.g., April 2024), the strategy demonstrated a capability to recover faster than the index, driven by its rotation into high-momentum sectors.
+1.  **Resilient Alpha Generation (Net of Fees):** Even after strictly accounting for a 0.1% transaction cost per trade, the strategy achieved a final capital of **$15,669.57** (+56.7% Total Return), outperforming the SPY benchmark (~$15,000 / +50.0%).
+2.  **Consistent Annualized Excess Return:** The strategy delivered a Compound Annual Growth Rate (CAGR) of **~22.1%**, generating an estimated **2.5% Annualized Alpha** over the S&P 500 during the validation window.
+3.  **No "Cash Drag":** Unlike previous iterations that flat-lined by holding T-Bills, this curve shows active and profitable participation in major market rallies.
+4.  **Rapid Drawdown Recovery:** During market pullbacks (e.g., April 2024 and mid-2025), the strategy demonstrated a capability to recover faster than the broad index, driven by its systematic rotation into high-momentum sectors.
 
-| Metric | AI Strategy | S&P 500 (Benchmark) |
+| Metric | AI Strategy (Net of Fees) | S&P 500 (Benchmark) |
 | :--- | :--- | :--- |
-| **Total Return** | **+64.6%** | ~50.2% |
+| **Total Return** | **+56.7%** | ~50.0% |
+| **Est. CAGR** | **~22.1%** | ~19.6% |
+| **Annualized Alpha** | **~2.5%** | Baseline |
 | **Exposure** | **100% Equity** | 100% Equity |
-| **Rebalancing** | Quarterly | N/A |
-| **Top Sector Bets** | Tech, Healthcare, Industrials | Diversified |
+| **Rebalancing** | Quarterly (63 Days) | N/A |
+| **Transaction Costs** | 0.1% per trade | 0.0% (Index) |
 
 ## 🛠️ Future Roadmap (Towards True Multi-Asset)
 To re-introduce Multi-Asset capabilities without the "Cash Trap," future versions will explore:
