@@ -42,6 +42,16 @@ Moving away from conservative Risk Parity, the allocation logic is inspired by t
     * **Validation:** Out-of-Sample testing with a 63-day rebalancing frequency, simulating a real-world quarterly rebalancing fund.
 * **Regime-Based Clustering:** Uses **Agglomerative Clustering** on latent embeddings to ensure the portfolio selects stocks that are *behaviorally distinct*, avoiding the trap of buying 30 correlated tech stocks.
 
+quant_trading_project/
+│
+├── config.py           # Global configurations and hyperparameters
+├── data.py             # Data ingestion and caching
+├── features.py         # Technical indicators and feature engineering
+├── model.py            # PyTorch Transformer architecture and training
+├── portfolio.py        # Clustering and portfolio optimization
+├── backtest.py         # Rolling backtest engine and visualization
+└── main.py             # Main execution entry point
+
 ## ⚙️ Technical Architecture
 
 ### 1. Data Pipeline
