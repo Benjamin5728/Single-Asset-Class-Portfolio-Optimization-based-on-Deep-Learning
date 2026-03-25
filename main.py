@@ -17,8 +17,6 @@ import torch.nn.functional as F
 
 warnings.filterwarnings('ignore')
 
-
-
 STOCKS = [
     # Technology
     'AAPL', 'MSFT', 'NVDA', 'AMZN', 'GOOGL', 'META', 'TSLA', 'AVGO', 'CRM', 'AMD', 'ADBE', 'CSCO', 'ACN', 'INTC', 'ORCL', 'QCOM', 'TXN', 'IBM', 'AMAT', 'NOW', 'INTU', 'UBER', 'MU', 'PANW', 'ADI', 'LRCX', 'KLAC', 'SNPS', 'CDNS', 'ROP', 'APH', 'NXPI', 'MCHP', 'FTNT', 'MSI', 'TEL', 'IT', 'HPQ', 'GLW', 'TRMB', 'STX', 'WDC', 'NTAP', 'PSTG', 'ANET', 'SMCI', 'PLTR', 'DELL', 'HPE', 'FFIV', 'JNPR', 'KEYS', 'TYL', 'ZBRA', 'AKAM', 'GEN',
@@ -42,13 +40,6 @@ STOCKS = [
     'PLD', 'AMT', 'EQIX', 'CCI', 'PSA', 'O', 'SPG', 'WELL', 'DLR', 'VICI', 'AVB', 'EQR', 'CBRE', 'CSGP', 'SUI', 'INVH', 'MAA', 'ESS', 'UDR', 'KIM'
 ]
 
-
-
-BONDS = []
-COMMODITIES = []
-FOREX = []
-ETFS = [] 
-
 TICKERS = list(set(STOCKS))
 
 BENCHMARK_TICKER = 'SPY'
@@ -60,6 +51,9 @@ END_DATE = datetime.datetime.now().strftime('%Y-%m-%d')
 
 TRAIN_WINDOW = 1008     
 REBALANCE_FREQ = 63     
+
+# --- NEW PARAMETER: Transaction Cost ---
+TRANSACTION_COST = 0.001 # 0.1% cost per trade (covers slippage and fees)
 
 SEQUENCE_LENGTH = 30
 FEATURE_SIZE = 9        
@@ -79,8 +73,6 @@ else:
     DEVICE = torch.device("cpu")
 print(f"Running on device: {DEVICE}")
 print(f"Total Assets in Universe: {len(TICKERS)}")
-
-
 
 def set_deterministic(seed=42):
     random.seed(seed)
@@ -132,7 +124,6 @@ def calculate_technical_indicators(df, benchmark_series):
     return df
 
 def get_data_with_cache(tickers, start, end):
-
     cache_file = 'sp500_stocks_only_data.pkl'
     if os.path.exists(cache_file):
         print("Loading data from local cache (fast)...")
@@ -158,7 +149,6 @@ def process_features(raw_data, tickers):
 
     print("Engineering features...")
     for ticker in tqdm(tickers):
-
         if ticker == BENCHMARK_TICKER or ticker in BLACKLIST:
             continue
             
@@ -275,8 +265,6 @@ def extract_embeddings_slice(features_dict, tickers, components, end_date):
             embeddings[t] = emb.cpu().numpy().flatten()
     return pd.DataFrame(embeddings).T
 
-
-
 def select_portfolio_max_sharpe(embeddings_df, features_dict, start_date, end_date):
     metrics_list = []
     
@@ -321,8 +309,6 @@ def select_portfolio_max_sharpe(embeddings_df, features_dict, start_date, end_da
     final_df['Weight'] = weights
     return final_df[['Weight', 'Sharpe']]
 
-
-
 def run_rolling_backtest(raw_data):
     features_dict, valid_tickers = process_features(raw_data, TICKERS)
     
@@ -338,9 +324,13 @@ def run_rolling_backtest(raw_data):
     current_capital = 10000.0
     pbar = tqdm(total=len(all_dates) - current_idx)
     
+    # --- State Tracker for Transaction Costs ---
+    prev_weights = pd.Series(dtype=float) 
+    
     print("\n====== Starting Rolling Backtest (Pure Stock) ======")
     print(f"Train Window: {TRAIN_WINDOW} days")
     print(f"Rebalance: Every {REBALANCE_FREQ} days")
+    print(f"Transaction Cost Rate: {TRANSACTION_COST:.2%}")
     
     while current_idx < len(all_dates):
         train_end_date = all_dates[current_idx]
@@ -358,10 +348,24 @@ def run_rolling_backtest(raw_data):
         if portfolio_weights.empty:
             current_idx += REBALANCE_FREQ; pbar.update(REBALANCE_FREQ); continue
 
+        # --- Calculate Turnover and Apply Costs ---
+        current_weights = portfolio_weights['Weight']
+        all_assets = set(prev_weights.index).union(set(current_weights.index))
+        turnover = sum(abs(current_weights.get(ticker, 0.0) - prev_weights.get(ticker, 0.0)) for ticker in all_assets)
+        
+        # Deduct transaction cost directly from capital at the start of rebalancing period
+        trade_cost_capital = current_capital * (turnover * TRANSACTION_COST)
+        current_capital -= trade_cost_capital
+        
+        # Save current weights for the next iteration
+        prev_weights = current_weights.copy()
+        
+        # Display Logs
         top_picks = portfolio_weights.sort_values('Weight', ascending=False).head(5)
         top_str = ", ".join([f"{t}({w:.1%})" for t, w in zip(top_picks.index, top_picks['Weight'])])
-        print(f"\n📅 Rebalance {str(train_end_date.date())} | Top Picks: {top_str}")
+        print(f"\n📅 Rebalance {str(train_end_date.date())} | Turnover: {turnover:.2f} | Cost: ${trade_cost_capital:.2f} | Top Picks: {top_str}")
 
+        # Simulate Daily Returns for the Period
         test_data = raw_data.loc[train_end_date:test_end_date]
         period_daily_returns = pd.Series(0.0, index=test_data.index)
         
@@ -389,9 +393,9 @@ def run_rolling_backtest(raw_data):
     spy_equity = 10000.0 * (1 + spy_ret).cumprod()
     
     plt.figure(figsize=(12, 6))
-    plt.plot(equity_df.index, equity_df['Strategy'], label='AI Pure Stock Strategy', color='blue', linewidth=2)
+    plt.plot(equity_df.index, equity_df['Strategy'], label='AI Strategy (Net of Fees)', color='blue', linewidth=2)
     plt.plot(equity_df.index, spy_equity, label='S&P 500 (SPY)', color='gray', linestyle='--')
-    plt.title('Rolling Backtest: 300+ Stocks Universe (Max Sharpe)')
+    plt.title('Rolling Backtest: 300+ Stocks Universe (Max Sharpe, with Tx Costs)')
     plt.ylabel('Portfolio Value')
     plt.legend()
     plt.grid(True, alpha=0.3)
